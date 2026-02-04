@@ -9,8 +9,12 @@ import {
     Loader2,
     RefreshCw,
     Check,
-    Mail
+    Mail,
+    Home
 } from 'lucide-react';
+
+// Dynamic API base URL for production/development
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const AdminDashboard = () => {
     const [user, setUser] = useState(null);
@@ -24,24 +28,21 @@ const AdminDashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Check if user is logged in - call backend directly
-                const userRes = await axios.get('http://localhost:5000/auth/current_user', {
+                const userRes = await axios.get(`${API_BASE}/auth/current_user`, {
                     withCredentials: true
                 });
 
                 if (!userRes.data.success || !userRes.data.user) {
-                    // Not logged in, redirect to home
                     window.location.href = '/';
                     return;
                 }
 
                 setUser(userRes.data.user);
 
-                // Fetch admin data - call backend directly
                 const [statsRes, eventsRes, leadsRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/admin/stats', { withCredentials: true }),
-                    axios.get('http://localhost:5000/api/admin/events', { withCredentials: true }),
-                    axios.get('http://localhost:5000/api/admin/leads', { withCredentials: true }),
+                    axios.get(`${API_BASE}/api/admin/stats`, { withCredentials: true }),
+                    axios.get(`${API_BASE}/api/admin/events`, { withCredentials: true }),
+                    axios.get(`${API_BASE}/api/admin/leads`, { withCredentials: true }),
                 ]);
 
                 setStats(statsRes.data.data);
@@ -63,16 +64,14 @@ const AdminDashboard = () => {
     const handleImport = async (eventId) => {
         try {
             setImporting(eventId);
-            await axios.post(`http://localhost:5000/api/admin/events/${eventId}/import`, {}, { withCredentials: true });
+            await axios.post(`${API_BASE}/api/admin/events/${eventId}/import`, {}, { withCredentials: true });
 
-            // Update local state
             setEvents(events.map(e =>
                 e._id === eventId
                     ? { ...e, status: 'imported', isImported: true }
                     : e
             ));
 
-            // Update stats
             if (stats) {
                 setStats({
                     ...stats,
@@ -93,7 +92,7 @@ const AdminDashboard = () => {
 
     const handleTriggerScrape = async () => {
         try {
-            await axios.post('http://localhost:5000/api/admin/scrape', {}, { withCredentials: true });
+            await axios.post(`${API_BASE}/api/admin/scrape`, {}, { withCredentials: true });
             alert('Scraping started! Check server logs for progress.');
         } catch (err) {
             console.error('Error triggering scrape:', err);
@@ -103,184 +102,365 @@ const AdminDashboard = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-                <Loader2 className="w-12 h-12 text-sky-500 animate-spin" />
+            <div style={{
+                minHeight: '100vh',
+                backgroundColor: '#0a0a0a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}>
+                <Loader2 style={{ width: '32px', height: '32px', color: '#525252', animation: 'spin 1s linear infinite' }} />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-900">
-            {/* Header */}
-            <header className="bg-slate-800 border-b border-slate-700">
-                <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <LayoutDashboard className="w-8 h-8 text-sky-500" />
-                        <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+        <div style={{ minHeight: '100vh', backgroundColor: '#0a0a0a' }}>
+            {/* Fixed Navbar */}
+            <nav style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 50,
+                backgroundColor: 'rgba(10, 10, 10, 0.9)',
+                backdropFilter: 'blur(12px)',
+                borderBottom: '1px solid #262626',
+                height: '64px',
+            }}>
+                <div style={{
+                    maxWidth: '1280px',
+                    margin: '0 auto',
+                    padding: '0 24px',
+                    height: '64px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                }}>
+                    {/* Logo */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <LayoutDashboard style={{ width: '24px', height: '24px', color: '#10b981' }} />
+                        <span style={{ fontSize: '18px', fontWeight: 600, color: '#ffffff' }}>
+                            Admin Dashboard
+                        </span>
                     </div>
-                    <div className="flex items-center gap-4">
+
+                    {/* User Info & Actions */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         {user && (
-                            <div className="flex items-center gap-3">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 {user.photo && (
-                                    <img src={user.photo} alt="" className="w-8 h-8 rounded-full" />
+                                    <img
+                                        src={user.photo}
+                                        alt=""
+                                        style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+                                    />
                                 )}
-                                <span className="text-slate-300">{user.displayName}</span>
+                                <span style={{ color: '#a3a3a3', fontSize: '14px' }}>{user.displayName}</span>
                             </div>
                         )}
                         <a
-                            href="http://localhost:5000/auth/logout"
-                            className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                            href="/"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '8px 12px',
+                                color: '#a3a3a3',
+                                textDecoration: 'none',
+                                fontSize: '14px',
+                            }}
                         >
-                            <LogOut className="w-4 h-4" />
+                            <Home style={{ width: '16px', height: '16px' }} />
+                            Home
+                        </a>
+                        <a
+                            href={`${API_BASE}/auth/logout`}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '8px 16px',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                borderRadius: '8px',
+                                color: '#ef4444',
+                                textDecoration: 'none',
+                                fontSize: '14px',
+                            }}
+                        >
+                            <LogOut style={{ width: '16px', height: '16px' }} />
                             Logout
                         </a>
                     </div>
                 </div>
-            </header>
+            </nav>
 
-            <main className="max-w-7xl mx-auto px-4 py-8">
-                {/* Stats Row */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-sky-500/20 rounded-lg">
-                                <Calendar className="w-6 h-6 text-sky-500" />
+            {/* Spacer for fixed navbar */}
+            <div style={{ height: '64px' }} />
+
+            {/* Main Content */}
+            <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+                {/* Stats Grid */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '16px',
+                    marginBottom: '32px',
+                }}>
+                    {/* Total Events */}
+                    <div style={{
+                        backgroundColor: '#171717',
+                        border: '1px solid #262626',
+                        borderRadius: '12px',
+                        padding: '20px',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                                width: '40px',
+                                height: '40px',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderRadius: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}>
+                                <Calendar style={{ width: '20px', height: '20px', color: '#3b82f6' }} />
                             </div>
                             <div>
-                                <p className="text-slate-400 text-sm">Total Events</p>
-                                <p className="text-2xl font-bold text-white">{stats?.events?.total || 0}</p>
+                                <p style={{ color: '#737373', fontSize: '13px', marginBottom: '2px' }}>Total Events</p>
+                                <p style={{ color: '#ffffff', fontSize: '24px', fontWeight: 700 }}>{stats?.events?.total || 0}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-green-500/20 rounded-lg">
-                                <Calendar className="w-6 h-6 text-green-500" />
+                    {/* New Events */}
+                    <div style={{
+                        backgroundColor: '#171717',
+                        border: '1px solid #262626',
+                        borderRadius: '12px',
+                        padding: '20px',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                                width: '40px',
+                                height: '40px',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderRadius: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}>
+                                <Calendar style={{ width: '20px', height: '20px', color: '#10b981' }} />
                             </div>
                             <div>
-                                <p className="text-slate-400 text-sm">New Events</p>
-                                <p className="text-2xl font-bold text-white">{stats?.events?.new || 0}</p>
+                                <p style={{ color: '#737373', fontSize: '13px', marginBottom: '2px' }}>New Events</p>
+                                <p style={{ color: '#ffffff', fontSize: '24px', fontWeight: 700 }}>{stats?.events?.new || 0}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-purple-500/20 rounded-lg">
-                                <Download className="w-6 h-6 text-purple-500" />
+                    {/* Imported */}
+                    <div style={{
+                        backgroundColor: '#171717',
+                        border: '1px solid #262626',
+                        borderRadius: '12px',
+                        padding: '20px',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                                width: '40px',
+                                height: '40px',
+                                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                                borderRadius: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}>
+                                <Download style={{ width: '20px', height: '20px', color: '#a855f7' }} />
                             </div>
                             <div>
-                                <p className="text-slate-400 text-sm">Imported</p>
-                                <p className="text-2xl font-bold text-white">{stats?.events?.imported || 0}</p>
+                                <p style={{ color: '#737373', fontSize: '13px', marginBottom: '2px' }}>Imported</p>
+                                <p style={{ color: '#ffffff', fontSize: '24px', fontWeight: 700 }}>{stats?.events?.imported || 0}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-amber-500/20 rounded-lg">
-                                <Users className="w-6 h-6 text-amber-500" />
+                    {/* Total Leads */}
+                    <div style={{
+                        backgroundColor: '#171717',
+                        border: '1px solid #262626',
+                        borderRadius: '12px',
+                        padding: '20px',
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                                width: '40px',
+                                height: '40px',
+                                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                                borderRadius: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}>
+                                <Users style={{ width: '20px', height: '20px', color: '#f59e0b' }} />
                             </div>
                             <div>
-                                <p className="text-slate-400 text-sm">Leads Collected</p>
-                                <p className="text-2xl font-bold text-white">{stats?.leads?.total || 0}</p>
+                                <p style={{ color: '#737373', fontSize: '13px', marginBottom: '2px' }}>Total Leads</p>
+                                <p style={{ color: '#ffffff', fontSize: '24px', fontWeight: 700 }}>{stats?.leads?.total || 0}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-4 mb-6">
+                {/* Actions Bar */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '24px',
+                }}>
+                    {/* Tabs */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            onClick={() => setActiveTab('events')}
+                            style={{
+                                padding: '10px 20px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                backgroundColor: activeTab === 'events' ? '#ffffff' : '#171717',
+                                color: activeTab === 'events' ? '#000000' : '#a3a3a3',
+                            }}
+                        >
+                            Events ({events.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('leads')}
+                            style={{
+                                padding: '10px 20px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                backgroundColor: activeTab === 'leads' ? '#ffffff' : '#171717',
+                                color: activeTab === 'leads' ? '#000000' : '#a3a3a3',
+                            }}
+                        >
+                            Leads ({leads.length})
+                        </button>
+                    </div>
+
+                    {/* Scrape Button */}
                     <button
                         onClick={handleTriggerScrape}
-                        className="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 20px',
+                            backgroundColor: '#10b981',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                        }}
                     >
-                        <RefreshCw className="w-4 h-4" />
+                        <RefreshCw style={{ width: '16px', height: '16px' }} />
                         Run Scraper
                     </button>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex gap-2 mb-6">
-                    <button
-                        onClick={() => setActiveTab('events')}
-                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${activeTab === 'events'
-                            ? 'bg-sky-600 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:text-white'
-                            }`}
-                    >
-                        Event Management ({events.length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('leads')}
-                        className={`px-6 py-2 rounded-lg font-medium transition-colors ${activeTab === 'leads'
-                            ? 'bg-sky-600 text-white'
-                            : 'bg-slate-800 text-slate-400 hover:text-white'
-                            }`}
-                    >
-                        Leads ({leads.length})
-                    </button>
-                </div>
-
-                {/* Tab Content */}
-                <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                {/* Content Table */}
+                <div style={{
+                    backgroundColor: '#171717',
+                    border: '1px solid #262626',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                }}>
                     {activeTab === 'events' && (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr className="bg-slate-700/50">
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Image</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Title</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Status</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Action</th>
+                                    <tr style={{ backgroundColor: '#0a0a0a' }}>
+                                        <th style={{ padding: '14px 20px', textAlign: 'left', color: '#737373', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Image</th>
+                                        <th style={{ padding: '14px 20px', textAlign: 'left', color: '#737373', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Title</th>
+                                        <th style={{ padding: '14px 20px', textAlign: 'left', color: '#737373', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
+                                        <th style={{ padding: '14px 20px', textAlign: 'left', color: '#737373', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                                        <th style={{ padding: '14px 20px', textAlign: 'left', color: '#737373', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-700">
-                                    {events.map((event) => (
-                                        <tr key={event._id} className="hover:bg-slate-700/30">
-                                            <td className="px-6 py-4">
+                                <tbody>
+                                    {events.map((event, idx) => (
+                                        <tr key={event._id} style={{ borderTop: '1px solid #262626' }}>
+                                            <td style={{ padding: '14px 20px' }}>
                                                 <img
                                                     src={event.image}
                                                     alt=""
-                                                    className="w-16 h-12 object-cover rounded"
-                                                    onError={(e) => e.target.src = 'https://placehold.co/100x75?text=Event'}
+                                                    style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '6px', backgroundColor: '#0a0a0a' }}
+                                                    onError={(e) => e.target.src = 'https://placehold.co/60x40/171717/525252?text=...'}
                                                 />
                                             </td>
-                                            <td className="px-6 py-4 text-white font-medium max-w-xs truncate">
-                                                {event.title}
+                                            <td style={{ padding: '14px 20px', color: '#ffffff', fontSize: '14px', fontWeight: 500, maxWidth: '250px' }}>
+                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                                                    {event.title}
+                                                </span>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-400 text-sm">
+                                            <td style={{ padding: '14px 20px', color: '#a3a3a3', fontSize: '13px' }}>
                                                 {event.date || 'TBA'}
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 text-xs rounded-full ${event.status === 'new' ? 'bg-green-500/20 text-green-400' :
-                                                    event.status === 'imported' ? 'bg-purple-500/20 text-purple-400' :
-                                                        event.status === 'updated' ? 'bg-blue-500/20 text-blue-400' :
-                                                            'bg-slate-500/20 text-slate-400'
-                                                    }`}>
+                                            <td style={{ padding: '14px 20px' }}>
+                                                <span style={{
+                                                    padding: '4px 10px',
+                                                    borderRadius: '999px',
+                                                    fontSize: '11px',
+                                                    fontWeight: 500,
+                                                    backgroundColor: event.status === 'new' ? 'rgba(16, 185, 129, 0.1)' :
+                                                        event.status === 'imported' ? 'rgba(168, 85, 247, 0.1)' :
+                                                            event.status === 'updated' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(115, 115, 115, 0.1)',
+                                                    color: event.status === 'new' ? '#10b981' :
+                                                        event.status === 'imported' ? '#a855f7' :
+                                                            event.status === 'updated' ? '#3b82f6' : '#737373',
+                                                }}>
                                                     {event.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td style={{ padding: '14px 20px' }}>
                                                 {event.status !== 'imported' ? (
                                                     <button
                                                         onClick={() => handleImport(event._id)}
                                                         disabled={importing === event._id}
-                                                        className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            padding: '6px 14px',
+                                                            backgroundColor: '#a855f7',
+                                                            color: '#ffffff',
+                                                            border: 'none',
+                                                            borderRadius: '6px',
+                                                            fontSize: '13px',
+                                                            fontWeight: 500,
+                                                            cursor: 'pointer',
+                                                            opacity: importing === event._id ? 0.6 : 1,
+                                                        }}
                                                     >
                                                         {importing === event._id ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            <Loader2 style={{ width: '14px', height: '14px', animation: 'spin 1s linear infinite' }} />
                                                         ) : (
-                                                            <Download className="w-4 h-4" />
+                                                            <Download style={{ width: '14px', height: '14px' }} />
                                                         )}
                                                         Import
                                                     </button>
                                                 ) : (
-                                                    <span className="flex items-center gap-1 text-green-400 text-sm">
-                                                        <Check className="w-4 h-4" />
-                                                        Imported
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontSize: '13px' }}>
+                                                        <Check style={{ width: '14px', height: '14px' }} />
+                                                        Done
                                                     </span>
                                                 )}
                                             </td>
@@ -292,38 +472,41 @@ const AdminDashboard = () => {
                     )}
 
                     {activeTab === 'leads' && (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr className="bg-slate-700/50">
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Email</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Event</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase">Date</th>
+                                    <tr style={{ backgroundColor: '#0a0a0a' }}>
+                                        <th style={{ padding: '14px 20px', textAlign: 'left', color: '#737373', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</th>
+                                        <th style={{ padding: '14px 20px', textAlign: 'left', color: '#737373', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Event</th>
+                                        <th style={{ padding: '14px 20px', textAlign: 'left', color: '#737373', fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-700">
-                                    {leads.map((lead) => (
-                                        <tr key={lead._id} className="hover:bg-slate-700/30">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Mail className="w-4 h-4 text-sky-500" />
-                                                    <span className="text-white">{lead.email}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-slate-400 max-w-xs truncate">
-                                                {lead.eventTitle || lead.eventId?.title || 'N/A'}
-                                            </td>
-                                            <td className="px-6 py-4 text-slate-400 text-sm">
-                                                {new Date(lead.createdAt).toLocaleDateString()}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {leads.length === 0 && (
+                                <tbody>
+                                    {leads.length === 0 ? (
                                         <tr>
-                                            <td colSpan="3" className="px-6 py-12 text-center text-slate-500">
+                                            <td colSpan="3" style={{ padding: '48px 20px', textAlign: 'center', color: '#525252' }}>
                                                 No leads collected yet
                                             </td>
                                         </tr>
+                                    ) : (
+                                        leads.map((lead) => (
+                                            <tr key={lead._id} style={{ borderTop: '1px solid #262626' }}>
+                                                <td style={{ padding: '14px 20px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <Mail style={{ width: '16px', height: '16px', color: '#3b82f6' }} />
+                                                        <span style={{ color: '#ffffff', fontSize: '14px' }}>{lead.email}</span>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '14px 20px', color: '#a3a3a3', fontSize: '14px', maxWidth: '300px' }}>
+                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                                                        {lead.eventTitle || lead.eventId?.title || 'N/A'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '14px 20px', color: '#a3a3a3', fontSize: '13px' }}>
+                                                    {new Date(lead.createdAt).toLocaleDateString()}
+                                                </td>
+                                            </tr>
+                                        ))
                                     )}
                                 </tbody>
                             </table>

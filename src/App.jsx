@@ -6,6 +6,9 @@ import EventCard from './components/EventCard';
 import LeadModal from './components/LeadModal';
 import AdminDashboard from './components/AdminDashboard';
 
+// Dynamic API base URL for production/development
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 function HomePage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +20,7 @@ function HomePage() {
     const fetchEvents = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/events', {
+        const response = await axios.get(`${API_BASE}/api/events`, {
           params: {
             limit: 20,
             search: searchTerm || undefined,
@@ -108,7 +111,7 @@ function HomePage() {
 
           {/* Admin Link */}
           <a
-            href="http://localhost:5000/auth/google"
+            href={`${API_BASE}/auth/google`}
             style={{
               display: 'flex',
               alignItems: 'center',
