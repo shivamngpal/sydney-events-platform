@@ -1,10 +1,35 @@
 import { MapPin, ExternalLink, Calendar } from 'lucide-react';
 
-const EventCard = ({ event, onTicketClick }) => {
-    // Check if image is a placeholder or missing
-    const hasRealImage = event.image &&
+// Premium fallback images from Unsplash
+const FALLBACK_IMAGES = [
+    'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80', // Event Crowd
+    'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&w=800&q=80', // Concert
+    'https://images.unsplash.com/photo-1514525253440-b393452e3383?auto=format&fit=crop&w=800&q=80', // Night City
+    'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80', // Social
+    'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=800&q=80', // Art/Workshop
+];
+
+/**
+ * Get event image - returns real image if valid, otherwise a consistent fallback
+ */
+const getEventImage = (event) => {
+    // Check if image is valid (not empty, not placeholder)
+    const isValidImage = event.image &&
         !event.image.includes('placehold.co') &&
-        !event.image.includes('placeholder');
+        !event.image.includes('placeholder') &&
+        event.image.startsWith('http');
+
+    if (isValidImage) {
+        return event.image;
+    }
+
+    // Use title length to pick a consistent fallback for this event
+    const index = event.title.length % FALLBACK_IMAGES.length;
+    return FALLBACK_IMAGES[index];
+};
+
+const EventCard = ({ event, onTicketClick }) => {
+    const imageUrl = getEventImage(event);
 
     return (
         <div style={{
@@ -20,33 +45,22 @@ const EventCard = ({ event, onTicketClick }) => {
                 height: '200px',
                 width: '100%',
                 overflow: 'hidden',
-                background: hasRealImage ? '#0a0a0a' : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                backgroundColor: '#0a0a0a',
             }}>
-                {hasRealImage ? (
-                    <img
-                        src={event.image}
-                        alt={event.title}
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                        }}
-                        onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.style.background = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
-                        }}
-                    />
-                ) : (
-                    <div style={{
+                <img
+                    src={imageUrl}
+                    alt={event.title}
+                    style={{
                         width: '100%',
                         height: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}>
-                        <Calendar style={{ width: '48px', height: '48px', color: 'rgba(255,255,255,0.2)' }} />
-                    </div>
-                )}
+                        objectFit: 'cover',
+                    }}
+                    onError={(e) => {
+                        // If the fallback also fails, show gradient
+                        e.target.style.display = 'none';
+                        e.target.parentElement.style.background = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
+                    }}
+                />
                 {/* Status Badge */}
                 {event.status === 'new' && (
                     <span style={{
