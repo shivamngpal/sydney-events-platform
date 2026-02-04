@@ -2,6 +2,9 @@ import { useState } from 'react';
 import axios from 'axios';
 import { X, Mail, Loader2 } from 'lucide-react';
 
+// Dynamic API base URL for production/development
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const LeadModal = ({ isOpen, onClose, event }) => {
     const [email, setEmail] = useState('');
     const [agreed, setAgreed] = useState(false);
@@ -23,7 +26,7 @@ const LeadModal = ({ isOpen, onClose, event }) => {
             setLoading(true);
 
             // Save lead to backend
-            await axios.post('/api/leads', {
+            await axios.post(`${API_BASE}/api/leads`, {
                 email,
                 eventId: event._id,
                 eventTitle: event.title,
