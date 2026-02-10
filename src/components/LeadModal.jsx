@@ -35,7 +35,7 @@ const LeadModal = ({ isOpen, onClose, event }) => {
 
         try {
             setLoading(true);
-            await axios.post(`${API_BASE}/api/otp/send`, { email });
+            await axios.post(`${API_BASE}/api/otp/send`, { email }, { timeout: 30000 });
             setStep('otp');
         } catch (err) {
             console.error('Error sending OTP:', err);
@@ -93,7 +93,7 @@ const LeadModal = ({ isOpen, onClose, event }) => {
         setError('');
         try {
             setLoading(true);
-            await axios.post(`${API_BASE}/api/otp/send`, { email });
+            await axios.post(`${API_BASE}/api/otp/send`, { email }, { timeout: 30000 });
             setError(''); // clear any prior error
         } catch (err) {
             setError('Failed to resend code. Please try again.');
